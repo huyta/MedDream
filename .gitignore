@@ -1,0 +1,28 @@
+# ==========================================
+# MedDream Git Ignore Configuration
+# ==========================================
+
+# Secrets & Environment configuration
+.env
+
+# License files (avoid publishing private licenses)
+license/*
+!license/.gitkeep
+
+# Large raw test DICOM folders & storage
+Dicoms/
+orthanc-data/
+orthanc-db/
+
+# macOS / OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editor / IDE artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

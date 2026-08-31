@@ -1,0 +1,28 @@
+{
+  "Name": "MedDream-Orthanc-PACS",
+  "StorageDirectory": "/var/lib/orthanc/db",
+  "IndexDirectory": "/var/lib/orthanc/db",
+  "StorageCompression": false,
+  "MaximumStorageSize": 0,
+  "MaximumPatientCount": 0,
+  "HttpPort": 8042,
+  "DicomPort": 4242,
+  "DicomAet": "ORTHANC",
+  "DicomCheckCalledAet": false,
+  "RemoteAccessAllowed": true,
+  "SslEnabled": false,
+  "AuthenticationEnabled": true,
+  "RegisteredUsers": {
+    "orthanc": "orthanc"
+  },
+  "DicomWeb": {
+    "Enable": true,
+    "Root": "/dicom-web/",
+    "EnableWado": true,
+    "WadoRoot": "/wado",
+    "Ssl": false
+  },
+  "Plugins": [
+    "/usr/share/orthanc/plugins"
+  ]
+}

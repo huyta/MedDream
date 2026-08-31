@@ -1,0 +1,67 @@
+services:
+  # ==========================================
+  # Orthanc PACS (DICOM Storage & Server)
+  # ==========================================
+  orthanc:
+    image: orthancteam/orthanc:24.12.0
+    container_name: meddream-orthanc
+    restart: unless-stopped
+    ports:
+      - "${ORTHANC_DICOM_PORT:-4242}:4242"   # DICOM DIMSE Port (C-STORE, C-FIND, C-MOVE)
+      - "${ORTHANC_HTTP_PORT:-8042}:8042"     # Orthanc REST API & Web Explorer
+    environment:
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+      ORTHANC__REGISTERED_USERS: '{"orthanc":"orthanc"}'
+      DICOM_WEB__ENABLE: "true"
+      DICOM_WEB__ENABLE_WADO: "true"
+    volumes:
+      - ./config/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - orthanc-data:/var/lib/orthanc/db
+    networks:
+      - pacs-network
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request, base64; req = urllib.request.Request(\"http://localhost:8042/system\"); req.add_header(\"Authorization\", \"Basic \" + base64.b64encode(b\"orthanc:orthanc\").decode()); exit(0 if urllib.request.urlopen(req).status == 200 else 1)'"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ==========================================
+  # MedDream DICOM Viewer Web Application
+  # ==========================================
+  meddream:
+    image: meddream/orthanc-dicom-viewer:8.10.0-rc.8
+    container_name: meddream-viewer
+    restart: unless-stopped
+    ports:
+      - "${MEDDREAM_PORT:-8080}:8080"        # MedDream Web Viewer UI & API
+    volumes:
+      - ./config/application.properties:/opt/meddream/application.properties:ro
+      - ./license:/opt/meddream/license      # License directory for .lic / license files
+    depends_on:
+      orthanc:
+        condition: service_healthy
+    networks:
+      - pacs-network
+    healthcheck:
+      # Use raw TCP socket check to avoid consuming demo user license sessions
+      test: ["CMD-SHELL", "python3 -c 'import socket; s = socket.socket(); s.settimeout(2); s.connect((\"127.0.0.1\", 8080)); s.close()'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+# ==========================================
+# Persistent Storage Volumes
+# ==========================================
+volumes:
+  orthanc-data:
+    name: meddream_orthanc_data
+
+# ==========================================
+# Internal Network
+# ==========================================
+networks:
+  pacs-network:
+    name: meddream_pacs_net
+    driver: bridge
