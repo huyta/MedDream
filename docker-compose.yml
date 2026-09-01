@@ -38,6 +38,8 @@ services:
     volumes:
       - ./config/application.properties:/opt/meddream/application.properties:ro
       - ./license:/opt/meddream/license      # License directory for .lic / license files
+    environment:
+      - TOKEN_SERVICE_URL=${TOKEN_SERVICE_URL:-http://host.docker.internal:3000/api/token}
     depends_on:
       orthanc:
         condition: service_healthy

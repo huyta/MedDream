@@ -50,6 +50,8 @@ services:
     volumes:
       - ./config/application.properties:/opt/meddream/application.properties:ro
       - ./license:/opt/meddream/license      # License directory for .lic / license files
+    environment:
+      - TOKEN_SERVICE_URL=http://demo:3000/api/token
     depends_on:
       orthanc:
         condition: service_healthy
