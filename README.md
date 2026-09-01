@@ -63,6 +63,40 @@ http://localhost:8080/?study=1.3.6.1.4.1.5962.1.2.2.20040826185059.5457
 
 ---
 
+## 🖼️ Iframe Embedding & LIMS / HIS Integration
+
+To embed MedDream inside an `<iframe>` within your Laboratory Information Management System (LIMS), Electronic Health Record (EHR), or Hospital Information System (HIS), the security headers are configured in [config/application.properties](file:///Users/matt/Documents/MedDream/config/application.properties):
+
+```properties
+# 1. Disable restrictive legacy X-Frame-Options (ALLOW-FROM is deprecated by modern browsers)
+security.frameOptionsPolicy=NONE
+
+# 2. Configure Content-Security-Policy (CSP) frame-ancestors for your LIMS origin(s)
+# Replace * or append specific origins, e.g., 'self' https://lims.yourdomain.com http://localhost:3000
+security.contentSecurityPolicy=frame-ancestors 'self' *; default-src 'self'; base-uri 'self'; object-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' blob:; worker-src 'self' blob:; form-action 'self';
+
+# 3. Allow postMessage cross-window communication from your LIMS parent window
+security.postMessageWhitelist=*
+
+# 4. Cross-origin authorization
+security.authAllowedOrigins=*
+```
+
+### HTML Embedding Example
+
+```html
+<iframe
+  src="http://localhost:8080/?study=1.3.6.1.4.1.5962.1.2.2.20040826185059.5457"
+  width="100%"
+  height="800px"
+  frameborder="0"
+  allow="clipboard-read; clipboard-write; fullscreen"
+  allowfullscreen>
+</iframe>
+```
+
+---
+
 ## 🗄️ Database Scaling & Migration
 
 By default, the stack uses an embedded **SQLite** engine suitable for testing and development. When scaling up for production:
