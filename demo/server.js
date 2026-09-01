@@ -12,8 +12,48 @@ if (fs.existsSync(path.join(__dirname, '.env'))) {
   require('dotenv').config();
 }
 
+const crypto = require('crypto');
+
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+
+// ==============================================================================
+// In-Memory Token Store for MedDream Viewer Integration
+// ==============================================================================
+// Token TTL: 5 minutes (300 seconds)
+const TOKEN_TTL_MS = 5 * 60 * 1000;
+const tokenStore = new Map();
+
+/**
+ * Periodically purge expired tokens from memory
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of tokenStore.entries()) {
+    if (now > data.expiresAt) {
+      tokenStore.delete(token);
+    }
+  }
+}, 30000);
+
+/**
+ * Generate a cryptographically secure token for a study
+ */
+function createViewerToken(studyInstanceUid, metadata = {}) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const now = Date.now();
+  const tokenData = {
+    token,
+    studyInstanceUid,
+    patientId: metadata.patientId || '',
+    accessionNumber: metadata.accessionNumber || '',
+    userName: metadata.userName || 'demo',
+    createdAt: now,
+    expiresAt: now + TOKEN_TTL_MS
+  };
+  tokenStore.set(token, tokenData);
+  return tokenData;
+}
 
 // Server and PACS configuration
 const PORT = parseInt(process.env.APP_PORT || process.env.PORT || '3000', 10);
@@ -428,6 +468,108 @@ app.post('/api/import-sample', async (req, res) => {
     res.status(500).json({ success: false, error: 'Sample import failed', message: err.message });
   }
 });
+
+// ==============================================================================
+// MedDream Token Authentication APIs
+// ==============================================================================
+
+/**
+ * POST /api/token/generate
+ * Generates a short-lived cryptographically secure token for opening a study in MedDream
+ */
+app.post('/api/token/generate', (req, res) => {
+  const { studyInstanceUid, patientId, accessionNumber, userName } = req.body;
+  if (!studyInstanceUid) {
+    return res.status(400).json({ success: false, error: 'studyInstanceUid is required' });
+  }
+
+  const tokenData = createViewerToken(studyInstanceUid, { patientId, accessionNumber, userName });
+  const host = req.hostname === '127.0.0.1' || req.hostname === 'localhost' ? 'localhost' : req.hostname;
+  const viewerUrl = `http://${host}:${MEDDREAM_PORT}/?token=${tokenData.token}`;
+
+  console.log(`[TokenService] Generated secure token for study ${studyInstanceUid}: token=${tokenData.token.substring(0, 8)}... (expires in 5m)`);
+
+  res.json({
+    success: true,
+    token: tokenData.token,
+    expiresAt: tokenData.expiresAt,
+    expiresInSeconds: Math.floor(TOKEN_TTL_MS / 1000),
+    viewerUrl: viewerUrl,
+    studyInstanceUid
+  });
+});
+
+/**
+ * Handle Softneta MedDream token validation request
+ * Returns official com.softneta.token.model.v4.Request JSON model
+ */
+function handleTokenValidation(req, res) {
+  const token = req.query.token || req.params.token || req.body?.token;
+  
+  if (!token) {
+    console.warn('[TokenService] Validation rejected: Missing token');
+    return res.status(401).json({ error: 'Missing token parameter' });
+  }
+
+  const tokenData = tokenStore.get(token);
+  const now = Date.now();
+
+  if (!tokenData || now > tokenData.expiresAt) {
+    if (tokenData && now > tokenData.expiresAt) {
+      tokenStore.delete(token);
+    }
+    console.warn(`[TokenService] Validation rejected: Token is invalid or expired: ${token}`);
+    return res.status(401).json({ error: 'Token is invalid or has expired' });
+  }
+
+  console.log(`[TokenService] Token successfully validated for study: ${tokenData.studyInstanceUid}`);
+
+  // Softneta MedDream v4 Request JSON Schema
+  const responsePayload = {
+    version: 4,
+    items: [
+      {
+        studies: {
+          study: tokenData.studyInstanceUid,
+          storage: 'PACS'
+        }
+      }
+    ],
+    permissions: [
+      'SEARCH',
+      'EXPORT_ISO',
+      'EXPORT_ARCH',
+      'FORWARD',
+      'REPORT_VIEW',
+      'REPORT_UPLOAD',
+      'PATIENT_HISTORY',
+      'UPLOAD_DICOM_LIBRARY',
+      'DOCUMENT_VIEW',
+      'ADMIN'
+    ],
+    user: {
+      id: tokenData.userName || 'demo',
+      name: tokenData.userName || 'Demo User',
+      groups: ['ADMIN', 'USER'],
+      institution: {
+        name: 'HTAR Hospital',
+        department: 'Radiology'
+      }
+    }
+  };
+
+  res.json(responsePayload);
+}
+
+// Support MedDream token validation routes (/v4/validate, /v3/validate, /v2/validate, /v1/validate, /validate)
+app.get('/api/token/v4/validate', handleTokenValidation);
+app.get('/api/token/v3/validate', handleTokenValidation);
+app.get('/api/token/v2/validate', handleTokenValidation);
+app.get('/api/token/v1/validate', handleTokenValidation);
+app.get('/api/token/validate', handleTokenValidation);
+app.get('/api/token', handleTokenValidation);
+app.post('/api/token/validate', handleTokenValidation);
+app.post('/api/token/v4/validate', handleTokenValidation);
 
 // Single Page App fallback
 app.get('*', (req, res) => {

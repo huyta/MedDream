@@ -66,6 +66,32 @@ const ApiService = {
   },
 
   /**
+   * Request a secure, short-lived MedDream viewer token for a study
+   */
+  async generateViewerToken(studyData) {
+    const studyInstanceUid = typeof studyData === 'string' ? studyData : studyData.studyInstanceUid;
+    const patientId = typeof studyData === 'object' ? studyData.patientId : '';
+    const accessionNumber = typeof studyData === 'object' ? studyData.accessionNumber : '';
+
+    const res = await fetch('/api/token/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studyInstanceUid,
+        patientId,
+        accessionNumber
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to generate viewer token (HTTP ${res.status})`);
+    }
+
+    return await res.json();
+  },
+
+  /**
    * Upload DICOM files to Orthanc
    */
   async uploadDicomFiles(formData) {
@@ -80,3 +106,4 @@ const ApiService = {
     return await res.json();
   }
 };
+
