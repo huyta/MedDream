@@ -168,7 +168,6 @@ const App = {
 
       // Patient initial for avatar
       const initial = (study.patientName || 'U').charAt(0).toUpperCase();
-      const mainModality = (study.modalities && study.modalities[0]) || 'OT';
       const modalityBadges = (study.modalities || ['OT']).map(m => 
         `<span class="modality-badge mod-${m}">${m}</span>`
       ).join(' ');
@@ -189,21 +188,21 @@ const App = {
           </div>
         </td>
         <td>
-          <span style="font-family: var(--font-mono); font-weight: 500; font-size: 0.8rem;">
+          <span style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem;">
             ${this.escapeHtml(study.patientId)}
           </span>
         </td>
         <td>
           ${hasAccession ? `
             <div class="uid-cell" style="font-size: 0.8rem; font-family: var(--font-mono);">
-              <span style="color: var(--brand-primary); cursor: pointer; font-weight: 600;" onclick="App.filterByAccession('${this.escapeHtml(study.accessionNumber)}')" title="Click to filter by Accession: ${this.escapeHtml(study.accessionNumber)}">
+              <span class="accession-tag" onclick="App.filterByAccession('${this.escapeHtml(study.accessionNumber)}')" title="Click to filter by Accession: ${this.escapeHtml(study.accessionNumber)}">
                 ${this.escapeHtml(study.accessionNumber)}
               </span>
               <button class="uid-copy-btn" onclick="App.copyText('${this.escapeHtml(study.accessionNumber)}')" title="Copy Accession No">
                 <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
               </button>
             </div>
-          ` : `<span style="color: var(--text-muted); font-size: 0.78rem;">--</span>`}
+          ` : `<span style="color: #94A3B8; font-size: 0.78rem;">--</span>`}
         </td>
         <td>
           <div class="study-date-cell">
@@ -217,14 +216,14 @@ const App = {
           </div>
         </td>
         <td>
-          <div style="max-width: 200px; font-weight: 500; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(study.studyDescription)}">
+          <div style="max-width: 200px; font-weight: 500; color: #1E293B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(study.studyDescription)}">
             ${this.escapeHtml(study.studyDescription)}
           </div>
         </td>
         <td>
           <div style="font-size: 0.8rem; font-family: var(--font-mono);">
-            <strong style="color: var(--text-primary);">${study.seriesCount}</strong> series
-            <div style="font-size: 0.72rem; color: var(--text-muted);">${study.instancesCount || '--'} images</div>
+            <strong style="color: #0F172A;">${study.seriesCount}</strong> series
+            <div style="font-size: 0.72rem; color: #64748B;">${study.instancesCount || '--'} images</div>
           </div>
         </td>
         <td>
@@ -233,14 +232,14 @@ const App = {
               ${this.truncateUid(study.studyInstanceUid)}
             </span>
             <button class="uid-copy-btn" onclick="App.copyText('${study.studyInstanceUid}')" title="Copy Study Instance UID">
-              <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
+              <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
             </button>
           </div>
         </td>
         <td style="text-align: right;">
           <div class="table-actions">
             <button class="btn btn-sm btn-action-view" onclick="App.openStudyInViewer('${study.id}')" title="Open directly in MedDream Web Viewer">
-              <i data-lucide="play" style="width: 13px; height: 13px;"></i>
+              <i data-lucide="play" style="width: 12px; height: 12px;"></i>
               <span>View</span>
             </button>
             <button class="btn btn-sm btn-action-embed" onclick="App.embedStudyInModal('${study.id}')" title="View embedded in frame">
@@ -294,10 +293,10 @@ const App = {
             <span class="card-meta-label">Accession No</span>
             <span class="card-meta-value" style="font-family: var(--font-mono); font-size: 0.8rem;">
               ${hasAccession ? `
-                <span style="color: var(--brand-primary); cursor: pointer; font-weight: 600;" onclick="App.filterByAccession('${this.escapeHtml(study.accessionNumber)}')" title="Click to filter by Accession">
+                <span class="accession-tag" onclick="App.filterByAccession('${this.escapeHtml(study.accessionNumber)}')" title="Click to filter by Accession">
                   ${this.escapeHtml(study.accessionNumber)}
                 </span>
-              ` : '<span style="color: var(--text-muted);">--</span>'}
+              ` : '<span style="color: #94A3B8;">--</span>'}
             </span>
           </div>
           <div class="card-meta-row">
@@ -477,7 +476,7 @@ const App = {
 
     // Series container loading placeholder
     const seriesContainer = document.getElementById('drawer-series-list');
-    seriesContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); padding: 10px;">Loading series details...</div>';
+    seriesContainer.innerHTML = '<div style="font-size: 0.8rem; color: #64748B; padding: 10px;">Loading series details...</div>';
 
     // Fetch deep series breakdown
     try {
@@ -490,7 +489,7 @@ const App = {
           item.innerHTML = `
             <div class="series-info">
               <div class="series-name">${ser.seriesDescription || `Series #${ser.seriesNumber || index + 1}`}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">
+              <div style="font-size: 0.72rem; color: #64748B;">
                 ${ser.bodyPartExamined ? `Body Part: ${ser.bodyPartExamined} • ` : ''}
                 UID: ${this.truncateUid(ser.seriesInstanceUid)}
               </div>
@@ -504,7 +503,7 @@ const App = {
         });
       }
     } catch (e) {
-      seriesContainer.innerHTML = `<div style="font-size: 0.78rem; color: var(--text-muted);">Series summary: ${study.seriesCount} series.</div>`;
+      seriesContainer.innerHTML = `<div style="font-size: 0.78rem; color: #64748B;">Series summary: ${study.seriesCount} series.</div>`;
     }
 
     lucide.createIcons();
@@ -517,12 +516,28 @@ const App = {
   },
 
   /**
+   * Filter specifically by an accession number
+   */
+  filterByAccession(accessionNo) {
+    if (!accessionNo || accessionNo === 'N/A') return;
+    const accInput = document.getElementById('accession-filter-input');
+    const accClear = document.getElementById('accession-clear-btn');
+    if (accInput) {
+      accInput.value = accessionNo;
+      if (accClear) accClear.style.display = 'block';
+      this.state.accessionTerm = accessionNo;
+      this.applyFilters();
+      this.showToast(`Filtered by Accession: ${accessionNo}`, 'info');
+    }
+  },
+
+  /**
    * Import sample test DICOM study
    */
   async importSample() {
     this.showToast('Importing sample CT DICOM study to PACS...', 'info');
     try {
-      const res = await ApiService.importSampleStudy();
+      await ApiService.importSampleStudy();
       this.showToast('Sample study successfully imported!', 'success');
       await this.loadStudies();
     } catch (err) {
@@ -535,7 +550,7 @@ const App = {
    */
   copyText(text) {
     navigator.clipboard.writeText(text).then(() => {
-      this.showToast('Study Instance UID copied to clipboard', 'success');
+      this.showToast('Copied to clipboard', 'success');
     }).catch(() => {
       this.showToast('Failed to copy to clipboard', 'error');
     });
@@ -554,7 +569,7 @@ const App = {
     if (type === 'error') iconName = 'alert-circle';
 
     toast.innerHTML = `
-      <i data-lucide="${iconName}" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+      <i data-lucide="${iconName}" style="width: 16px; height: 16px; flex-shrink: 0; color: var(--brand-blue);"></i>
       <span>${this.escapeHtml(message)}</span>
     `;
 
@@ -564,25 +579,9 @@ const App = {
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(12px)';
-      toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
-    }, 3500);
-  },
-
-  /**
-   * Filter specifically by an accession number
-   */
-  filterByAccession(accessionNo) {
-    if (!accessionNo || accessionNo === 'N/A') return;
-    const accInput = document.getElementById('accession-filter-input');
-    const accClear = document.getElementById('accession-clear-btn');
-    if (accInput) {
-      accInput.value = accessionNo;
-      if (accClear) accClear.style.display = 'block';
-      this.state.accessionTerm = accessionNo;
-      this.applyFilters();
-      this.showToast(`Filtered by Accession: ${accessionNo}`, 'info');
-    }
+      toast.style.transition = 'all 0.25s ease';
+      setTimeout(() => toast.remove(), 250);
+    }, 3200);
   },
 
   /**
@@ -839,10 +838,10 @@ const App = {
 
     files.forEach(f => {
       const item = document.createElement('div');
-      item.style.cssText = 'display: flex; justify-content: space-between; padding: 4px 8px; background: var(--bg-surface-elevated); border-radius: 4px;';
+      item.style.cssText = 'display: flex; justify-content: space-between; padding: 4px 8px; background: #F8FAFC; border-radius: 4px; border: 1px solid #E2E8F0;';
       item.innerHTML = `
-        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px;">${this.escapeHtml(f.name)}</span>
-        <span style="color: var(--text-muted); font-family: var(--font-mono);">${(f.size / 1024).toFixed(1)} KB</span>
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; font-weight: 500;">${this.escapeHtml(f.name)}</span>
+        <span style="color: #64748B; font-family: var(--font-mono); font-size: 0.75rem;">${(f.size / 1024).toFixed(1)} KB</span>
       `;
       listEl.appendChild(item);
     });

@@ -9,14 +9,14 @@
   <!-- Google Fonts: Inter, Outfit, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230EA5E9'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230D62D9'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
   <header class="app-header">
     <div class="brand-container">
       <div class="brand-logo">
-        <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
+        <i data-lucide="layers" style="width: 20px; height: 20px;"></i>
       </div>
       <div class="brand-title-group">
         <h1>
@@ -108,75 +108,80 @@
 
     <!-- Toolbar: Search, Filters & Actions -->
     <section class="toolbar-panel">
-      <div class="toolbar-primary">
-        <!-- Search Filters Container -->
-        <div style="display: flex; gap: 0.75rem; flex: 1; flex-wrap: wrap; align-items: center;">
-          <!-- Instant General Search Box -->
-          <div class="search-box-container" style="flex: 1; min-width: 240px;">
-            <i data-lucide="search" class="search-icon" style="width: 18px; height: 18px;"></i>
-            <input 
-              type="text" 
-              id="search-input" 
-              class="search-input" 
-              placeholder="Search patient, ID, description, UID... (Press '/' to focus)"
-              autocomplete="off"
-              spellcheck="false"
-            >
-            <button id="search-clear-btn" class="search-clear-btn" title="Clear Search">
-              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
-            </button>
+      <!-- Blue Accent Top Bar -->
+      <div class="toolbar-top-accent"></div>
+
+      <div class="toolbar-content">
+        <div class="toolbar-primary">
+          <!-- Search Filters Group -->
+          <div class="search-filters-group">
+            <!-- Instant General Search Box -->
+            <div class="search-box-container">
+              <i data-lucide="search" class="search-icon" style="width: 17px; height: 17px;"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                class="search-input" 
+                placeholder="Search patient, ID, description, UID... (Press '/' to focus)"
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button id="search-clear-btn" class="search-clear-btn" title="Clear Search">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+
+            <!-- Dedicated Accession No Filter -->
+            <div class="accession-box-container">
+              <i data-lucide="hash" class="search-icon" style="width: 16px; height: 16px;"></i>
+              <input 
+                type="text" 
+                id="accession-filter-input" 
+                class="search-input" 
+                placeholder="Accession No..."
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button id="accession-clear-btn" class="search-clear-btn" title="Clear Accession Filter">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
           </div>
 
-          <!-- Dedicated Accession No Filter -->
-          <div class="search-box-container" style="width: 200px; flex: none;">
-            <i data-lucide="hash" class="search-icon" style="width: 16px; height: 16px;"></i>
-            <input 
-              type="text" 
-              id="accession-filter-input" 
-              class="search-input" 
-              placeholder="Accession No..."
-              autocomplete="off"
-              spellcheck="false"
-            >
-            <button id="accession-clear-btn" class="search-clear-btn" title="Clear Accession Filter">
-              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          <!-- Action Controls -->
+          <div class="toolbar-controls">
+            <!-- View Toggle (Table / Grid) -->
+            <div class="view-toggle-group">
+              <button class="view-toggle-btn active" id="btn-view-table" title="Table View" aria-label="Table View">
+                <i data-lucide="table" style="width: 16px; height: 16px;"></i>
+              </button>
+              <button class="view-toggle-btn" id="btn-view-cards" title="Cards View" aria-label="Cards View">
+                <i data-lucide="layout-grid" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+
+            <!-- Upload DICOM Modal Button -->
+            <button class="btn btn-secondary" id="btn-open-upload">
+              <i data-lucide="upload" style="width: 15px; height: 15px;"></i>
+              <span>Upload DICOM</span>
+            </button>
+
+            <!-- Sample Import Quick Trigger -->
+            <button class="btn btn-primary" id="btn-quick-sample" title="Download & Import standard test DICOM">
+              <i data-lucide="plus-circle" style="width: 15px; height: 15px;"></i>
+              <span>Import Sample</span>
             </button>
           </div>
         </div>
 
-        <!-- Action Controls -->
-        <div class="toolbar-controls">
-          <!-- View Toggle (Table / Grid) -->
-          <div class="view-toggle-group">
-            <button class="view-toggle-btn active" id="btn-view-table" title="Table View" aria-label="Table View">
-              <i data-lucide="table" style="width: 16px; height: 16px;"></i>
-            </button>
-            <button class="view-toggle-btn" id="btn-view-cards" title="Cards View" aria-label="Cards View">
-              <i data-lucide="layout-grid" style="width: 16px; height: 16px;"></i>
-            </button>
-          </div>
-
-          <!-- Upload DICOM Modal Button -->
-          <button class="btn btn-secondary" id="btn-open-upload">
-            <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
-            <span>Upload DICOM</span>
+        <!-- Modality Filter Bar -->
+        <div class="modality-filters" id="modality-filters-container">
+          <button class="filter-pill active" data-modality="ALL">
+            <span>All Modalities</span>
+            <span class="pill-count" id="pill-count-all">0</span>
           </button>
-
-          <!-- Sample Import Quick Trigger -->
-          <button class="btn btn-primary" id="btn-quick-sample" title="Download & Import standard test DICOM">
-            <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
-            <span>Import Sample</span>
-          </button>
+          <!-- Dynamic Modality Pills appended via JS -->
         </div>
-      </div>
-
-      <!-- Modality Filter Bar -->
-      <div class="modality-filters" id="modality-filters-container">
-        <button class="filter-pill active" data-modality="ALL">
-          <span>All Modalities</span>
-          <span class="pill-count" id="pill-count-all">0</span>
-        </button>
-        <!-- Dynamic Modality Pills appended via JS -->
       </div>
     </section>
 
@@ -185,10 +190,9 @@
 
       <!-- 1. Skeleton Loading State -->
       <div class="table-card" id="state-loading">
-        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 35%; height: 16px;"></div><div class="skeleton-box" style="width: 20%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
-        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 45%; height: 16px;"></div><div class="skeleton-box" style="width: 25%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
-        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 30%; height: 16px;"></div><div class="skeleton-box" style="width: 15%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
-        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 50%; height: 16px;"></div><div class="skeleton-box" style="width: 30%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 36px; height: 36px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 35%; height: 16px;"></div><div class="skeleton-box" style="width: 20%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 120px; height: 30px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 36px; height: 36px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 45%; height: 16px;"></div><div class="skeleton-box" style="width: 25%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 120px; height: 30px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 36px; height: 36px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 30%; height: 16px;"></div><div class="skeleton-box" style="width: 15%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 120px; height: 30px;"></div></div>
       </div>
 
       <!-- 2. Studies Table View (Default) -->
@@ -274,7 +278,7 @@
               <span>•</span>
               <span id="modal-viewer-desc">Study Description</span>
               <span>•</span>
-              <span class="uid-cell" style="font-size: 0.7rem;" id="modal-viewer-uid">UID</span>
+              <span class="uid-cell" style="font-size: 0.75rem;" id="modal-viewer-uid">UID</span>
             </div>
           </div>
         </div>
@@ -304,7 +308,7 @@
       <div class="viewer-iframe-container">
         <div class="viewer-iframe-loader" id="viewer-iframe-loader">
           <div class="spinner"></div>
-          <div style="font-size: 0.85rem; color: var(--text-secondary);">Connecting to MedDream DICOM Viewer...</div>
+          <div style="font-size: 0.85rem; color: #64748B;">Connecting to MedDream DICOM Viewer...</div>
         </div>
         <iframe 
           id="meddream-iframe" 
@@ -363,7 +367,7 @@
           </div>
           <div class="detail-item">
             <span class="detail-label">Accession Number</span>
-            <span class="detail-value" id="drawer-accession">--</span>
+            <span class="detail-value" style="color: var(--brand-blue); font-family: var(--font-mono);" id="drawer-accession">--</span>
           </div>
           <div class="detail-item full-width">
             <span class="detail-label">Study Description</span>
