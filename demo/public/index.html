@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MedDream DICOM Study Management and Viewer Integration Hub">
+  <title>MedDream DICOM Study Hub</title>
+
+  <!-- Google Fonts: Inter, Outfit, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230EA5E9'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-logo">
+        <i data-lucide="layers" style="width: 22px; height: 22px;"></i>
+      </div>
+      <div class="brand-title-group">
+        <h1>
+          MedDream Study Hub
+          <span class="brand-badge">DICOM PACS</span>
+        </h1>
+        <div class="brand-subtitle">Clinical Study Management & Web Viewer Integration</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Live PACS & Viewer Status -->
+      <div class="system-status-badges" id="system-status-badge">
+        <div class="status-pill" title="Orthanc PACS Server Connection">
+          <span class="status-dot" id="orthanc-status-dot"></span>
+          <span>PACS: <strong id="orthanc-status-text">Checking...</strong></span>
+        </div>
+        <div class="status-separator"></div>
+        <div class="status-pill" title="MedDream Viewer Endpoint">
+          <span class="status-dot" id="meddream-status-dot"></span>
+          <span>MedDream: <strong id="meddream-status-text">Ready</strong></span>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <button class="btn-icon" id="btn-settings" title="Server Connection Settings" aria-label="Settings">
+        <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
+      </button>
+
+      <button class="btn-icon" id="btn-refresh" title="Refresh Studies List" aria-label="Refresh">
+        <i data-lucide="refresh-cw" id="refresh-icon" style="width: 18px; height: 18px;"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Top Stats Banner -->
+    <section class="stats-grid" id="stats-banner">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper">
+          <i data-lucide="folder-git-2" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="stat-total-studies">--</div>
+          <div class="stat-label">Total Studies</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper purple">
+          <i data-lucide="scan-line" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="stat-total-series">--</div>
+          <div class="stat-label">Total Series</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper emerald">
+          <i data-lucide="file-image" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="stat-total-instances">--</div>
+          <div class="stat-label">DICOM Instances</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper amber">
+          <i data-lucide="activity" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <div class="stat-value" id="stat-modalities-count">--</div>
+          <div class="stat-label">Active Modalities</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar: Search, Filters & Actions -->
+    <section class="toolbar-panel">
+      <div class="toolbar-primary">
+        <!-- Search Filters Container -->
+        <div style="display: flex; gap: 0.75rem; flex: 1; flex-wrap: wrap; align-items: center;">
+          <!-- Instant General Search Box -->
+          <div class="search-box-container" style="flex: 1; min-width: 240px;">
+            <i data-lucide="search" class="search-icon" style="width: 18px; height: 18px;"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              class="search-input" 
+              placeholder="Search patient, ID, description, UID... (Press '/' to focus)"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <button id="search-clear-btn" class="search-clear-btn" title="Clear Search">
+              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+
+          <!-- Dedicated Accession No Filter -->
+          <div class="search-box-container" style="width: 200px; flex: none;">
+            <i data-lucide="hash" class="search-icon" style="width: 16px; height: 16px;"></i>
+            <input 
+              type="text" 
+              id="accession-filter-input" 
+              class="search-input" 
+              placeholder="Accession No..."
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <button id="accession-clear-btn" class="search-clear-btn" title="Clear Accession Filter">
+              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="toolbar-controls">
+          <!-- View Toggle (Table / Grid) -->
+          <div class="view-toggle-group">
+            <button class="view-toggle-btn active" id="btn-view-table" title="Table View" aria-label="Table View">
+              <i data-lucide="table" style="width: 16px; height: 16px;"></i>
+            </button>
+            <button class="view-toggle-btn" id="btn-view-cards" title="Cards View" aria-label="Cards View">
+              <i data-lucide="layout-grid" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+
+          <!-- Upload DICOM Modal Button -->
+          <button class="btn btn-secondary" id="btn-open-upload">
+            <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
+            <span>Upload DICOM</span>
+          </button>
+
+          <!-- Sample Import Quick Trigger -->
+          <button class="btn btn-primary" id="btn-quick-sample" title="Download & Import standard test DICOM">
+            <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+            <span>Import Sample</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modality Filter Bar -->
+      <div class="modality-filters" id="modality-filters-container">
+        <button class="filter-pill active" data-modality="ALL">
+          <span>All Modalities</span>
+          <span class="pill-count" id="pill-count-all">0</span>
+        </button>
+        <!-- Dynamic Modality Pills appended via JS -->
+      </div>
+    </section>
+
+    <!-- Studies Display Area -->
+    <section class="study-view-container" id="study-view-container">
+
+      <!-- 1. Skeleton Loading State -->
+      <div class="table-card" id="state-loading">
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 35%; height: 16px;"></div><div class="skeleton-box" style="width: 20%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 45%; height: 16px;"></div><div class="skeleton-box" style="width: 25%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 30%; height: 16px;"></div><div class="skeleton-box" style="width: 15%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
+        <div class="skeleton-row"><div class="skeleton-box" style="width: 40px; height: 40px; border-radius: 50%;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 8px;"><div class="skeleton-box" style="width: 50%; height: 16px;"></div><div class="skeleton-box" style="width: 30%; height: 12px;"></div></div><div class="skeleton-box" style="width: 80px; height: 24px;"></div><div class="skeleton-box" style="width: 140px; height: 32px;"></div></div>
+      </div>
+
+      <!-- 2. Studies Table View (Default) -->
+      <div class="table-card" id="studies-table-wrapper" style="display: none;">
+        <div class="table-responsive">
+          <table class="study-table" id="studies-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Patient ID</th>
+                <th>Accession No</th>
+                <th>Study Date & Time</th>
+                <th>Modality</th>
+                <th>Description</th>
+                <th>Series / Images</th>
+                <th>Study Instance UID</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studies-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Studies Cards Grid View -->
+      <div class="cards-grid" id="studies-cards-wrapper" style="display: none;">
+        <!-- Dynamically populated -->
+      </div>
+
+      <!-- 4. Empty State -->
+      <div class="state-container" id="state-empty" style="display: none;">
+        <div class="state-icon-circle">
+          <i data-lucide="inbox" style="width: 32px; height: 32px;"></i>
+        </div>
+        <h2 class="state-title" id="empty-state-title">No DICOM Studies Found</h2>
+        <p class="state-description" id="empty-state-desc">
+          No studies currently match your search filter or no DICOM studies are stored in the Orthanc PACS.
+        </p>
+        <div class="state-actions">
+          <button class="btn btn-secondary" id="btn-clear-filters" style="display: none;">Clear Filters</button>
+          <button class="btn btn-primary" id="btn-empty-import">
+            <i data-lucide="download-cloud" style="width: 16px; height: 16px;"></i>
+            <span>Import Sample CT Study</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. Error State -->
+      <div class="state-container error-state" id="state-error" style="display: none;">
+        <div class="state-icon-circle">
+          <i data-lucide="alert-triangle" style="width: 32px; height: 32px;"></i>
+        </div>
+        <h2 class="state-title">Unable to Connect to PACS Server</h2>
+        <p class="state-description" id="error-message-text">
+          Could not communicate with Orthanc PACS on port 8042. Please verify that the Docker containers are running.
+        </p>
+        <div class="state-actions">
+          <button class="btn btn-primary" id="btn-retry-fetch">
+            <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       MedDream Embedded Viewer Modal (Iframe)
+       ========================================================================== -->
+  <div class="viewer-modal-backdrop" id="viewer-modal" role="dialog" aria-modal="true">
+    <div class="viewer-modal-window" id="viewer-window">
+      <!-- Viewer Modal Header -->
+      <div class="viewer-header-bar">
+        <div class="viewer-study-title-group">
+          <span class="modality-badge" id="modal-viewer-modality">CT</span>
+          <div class="viewer-study-info">
+            <div class="viewer-patient-name" id="modal-viewer-patient">Patient Name</div>
+            <div class="viewer-study-meta">
+              <span id="modal-viewer-date">2021-08-26</span>
+              <span>•</span>
+              <span id="modal-viewer-desc">Study Description</span>
+              <span>•</span>
+              <span class="uid-cell" style="font-size: 0.7rem;" id="modal-viewer-uid">UID</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="viewer-toolbar-actions">
+          <button class="btn btn-sm btn-secondary" id="btn-viewer-copy-link" title="Copy MedDream Study Direct URL">
+            <i data-lucide="link" style="width: 14px; height: 14px;"></i>
+            <span>Copy URL</span>
+          </button>
+
+          <button class="btn btn-sm btn-primary" id="btn-viewer-new-tab" title="Open in Full Browser Tab">
+            <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+            <span>Open in Tab</span>
+          </button>
+
+          <button class="btn-icon" id="btn-viewer-fullscreen" title="Toggle Fullscreen">
+            <i data-lucide="maximize-2" id="icon-fullscreen" style="width: 16px; height: 16px;"></i>
+          </button>
+
+          <button class="btn-icon" id="btn-viewer-close" title="Close Viewer (Esc)">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewer Iframe Container -->
+      <div class="viewer-iframe-container">
+        <div class="viewer-iframe-loader" id="viewer-iframe-loader">
+          <div class="spinner"></div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary);">Connecting to MedDream DICOM Viewer...</div>
+        </div>
+        <iframe 
+          id="meddream-iframe" 
+          class="viewer-iframe" 
+          src="about:blank"
+          allow="clipboard-read; clipboard-write; fullscreen"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Slide-in Study Details Drawer
+       ========================================================================== -->
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="study-details-drawer" id="study-details-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">Study Metadata & Series</div>
+      <button class="btn-icon" id="btn-close-drawer" title="Close Drawer">
+        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body" id="drawer-body">
+      <!-- Patient Section -->
+      <div>
+        <div class="drawer-section-title">Patient Information</div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Patient Name</span>
+            <span class="detail-value" id="drawer-patient-name">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Patient ID</span>
+            <span class="detail-value" id="drawer-patient-id">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Birth Date</span>
+            <span class="detail-value" id="drawer-patient-dob">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Gender</span>
+            <span class="detail-value" id="drawer-patient-sex">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Study Section -->
+      <div>
+        <div class="drawer-section-title">Study Attributes</div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Study Date & Time</span>
+            <span class="detail-value" id="drawer-study-date">--</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Accession Number</span>
+            <span class="detail-value" id="drawer-accession">--</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="detail-label">Study Description</span>
+            <span class="detail-value" id="drawer-description">--</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="detail-label">Institution</span>
+            <span class="detail-value" id="drawer-institution">--</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="detail-label">Referring Physician</span>
+            <span class="detail-value" id="drawer-physician">--</span>
+          </div>
+          <div class="detail-item full-width">
+            <span class="detail-label">Study Instance UID</span>
+            <span class="detail-value" style="font-family: var(--font-mono); font-size: 0.78rem;" id="drawer-study-uid">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Series Breakdown Section -->
+      <div>
+        <div class="drawer-section-title">Series Breakdown (<span id="drawer-series-count">0</span>)</div>
+        <div class="series-list" id="drawer-series-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" style="flex: 1;" id="drawer-btn-embed">
+        <i data-lucide="layout" style="width: 15px; height: 15px;"></i>
+        <span>Embed Viewer</span>
+      </button>
+      <button class="btn btn-primary" style="flex: 1;" id="drawer-btn-open">
+        <i data-lucide="external-link" style="width: 15px; height: 15px;"></i>
+        <span>Open in MedDream</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==========================================================================
+       DICOM Upload Modal
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modal-upload">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.05rem; font-weight: 600;">Upload DICOM Files to PACS</h3>
+        <button class="btn-icon" id="btn-close-upload" title="Close">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="dropzone" id="upload-dropzone">
+          <i data-lucide="upload-cloud" class="dropzone-icon" style="width: 42px; height: 42px;"></i>
+          <div>
+            <div style="font-weight: 600; font-size: 0.95rem;">Drag & drop DICOM files here</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">Supports standard .dcm files</div>
+          </div>
+          <input type="file" id="file-input-dicom" multiple accept=".dcm,application/dicom" style="display: none;">
+          <button class="btn btn-sm btn-secondary" type="button" id="btn-browse-files">Browse Files</button>
+        </div>
+        <div id="upload-file-list" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-upload">Cancel</button>
+        <button class="btn btn-primary" id="btn-submit-upload" disabled>Upload to PACS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Server Settings Modal
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.05rem; font-weight: 600;">MedDream & PACS Configuration</h3>
+        <button class="btn-icon" id="btn-close-settings" title="Close">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="setting-server-ip">Server IP / Hostname</label>
+          <input type="text" id="setting-server-ip" class="form-input" placeholder="localhost or 192.168.1.X">
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Used to generate direct MedDream URLs for LAN/WAN access.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="setting-meddream-port">MedDream Viewer Port</label>
+          <input type="number" id="setting-meddream-port" class="form-input" value="8080">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-reset-settings">Reset to Defaults</button>
+        <button class="btn btn-primary" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Alerts Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/viewer.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

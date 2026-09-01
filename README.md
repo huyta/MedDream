@@ -14,10 +14,28 @@ MedDream/
 ├── config/
 │   ├── orthanc.json               # Orthanc PACS server & DICOMweb configuration
 │   └── application.properties     # MedDream viewer & PACS backend configuration
+├── demo/                          # DICOM Study Management & Viewing Web Application
+│   ├── package.json               # Demo dependencies & scripts
+│   ├── server.js                  # Express PACS proxy & API backend
+│   ├── public/                    # Frontend UI (HTML, CSS, JS)
+│   └── README.md                  # Demo guide
 ├── scripts/
 │   └── import_sample.sh           # Script to import DICOM files and output viewer URLs
 └── README.md                      # Complete setup & operations guide
 ```
+
+---
+
+## 💻 DICOM Study Management Demo Web App
+
+A responsive web application is available in `demo/` to browse studies, search/filter, and view them directly in MedDream:
+
+```bash
+cd demo
+npm install
+npm start
+```
+Access at: `http://localhost:3000`
 
 ---
 

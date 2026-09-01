@@ -1,0 +1,32 @@
+# ==============================================================================
+# MedDream DICOM Study Hub - Standalone Demo Container
+# ==============================================================================
+# Run this from within the demo/ directory to connect to existing PACS containers:
+#   docker compose up -d --build
+# ==============================================================================
+
+services:
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meddream-demo-hub
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - APP_PORT=3000
+      - ORTHANC_HOST=${ORTHANC_HOST:-orthanc}
+      - ORTHANC_HTTP_PORT=${ORTHANC_HTTP_PORT:-8042}
+      - ORTHANC_USER=${ORTHANC_USER:-orthanc}
+      - ORTHANC_PASSWORD=${ORTHANC_PASSWORD:-orthanc}
+      - MEDDREAM_PORT=${MEDDREAM_PORT:-8080}
+      - MEDDREAM_HOST=localhost
+    networks:
+      - pacs-network
+
+networks:
+  pacs-network:
+    name: meddream_pacs_net
+    external: true
