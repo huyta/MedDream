@@ -9,6 +9,9 @@
   "DicomPort": 4242,
   "DicomAet": "ORTHANC",
   "DicomCheckCalledAet": false,
+  "DicomAlwaysAllowFindWorklist": true,
+  "DicomAlwaysAllowFind": true,
+  "DicomAlwaysAllowStore": true,
   "RemoteAccessAllowed": true,
   "SslEnabled": false,
   "AuthenticationEnabled": true,
@@ -21,6 +24,11 @@
     "EnableWado": true,
     "WadoRoot": "/wado",
     "Ssl": false
+  },
+  "Worklists": {
+    "Enable": true,
+    "Database": "/var/lib/orthanc/worklists",
+    "FilterIssuerAet": false
   },
   "Plugins": [
     "/usr/share/orthanc/plugins"
