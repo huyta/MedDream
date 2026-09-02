@@ -1,0 +1,53 @@
+{
+  "worklists": [
+    {
+      "filename": "mwl_001_ct_chest.wl",
+      "patient_id": "MRN-2026-001",
+      "patient_name": "Davis^William^E",
+      "patient_birth_date": "1982-04-15",
+      "patient_sex": "M",
+      "patient_weight": 78.5,
+      "patient_size": 1.78,
+      "allergies": "Iodine contrast mild reaction",
+      "accession_number": "ACC20260901001",
+      "institution_name": "MedDream University Hospital",
+      "referring_physician": "Dr^Miller^Sarah",
+      "requested_procedure_id": "RP-CT-CHEST",
+      "requested_procedure_desc": "CT Thorax with IV Contrast",
+      "requested_procedure_priority": "HIGH",
+      "reason_for_procedure": "Staging / evaluation of solitary lung nodule",
+      "modality": "CT",
+      "station_ae_title": "CT_SCANNER_01",
+      "station_name": "CT Scanner Room 1",
+      "scheduled_start_date": "2026-09-02",
+      "scheduled_start_time": "08:30:00",
+      "scheduled_sps_id": "SPS-20260902-01",
+      "scheduled_sps_desc": "CT Thorax Protocol",
+      "scheduled_performing_physician": "Dr^Taylor^Mark"
+    },
+    {
+      "filename": "mwl_002_mr_lumbar.wl",
+      "patient_id": "MRN-2026-002",
+      "patient_name": "Taylor^Sophia^M",
+      "patient_birth_date": "1994-09-28",
+      "patient_sex": "F",
+      "patient_weight": 62.0,
+      "patient_size": 1.68,
+      "accession_number": "ACC20260901002",
+      "institution_name": "MedDream University Hospital",
+      "referring_physician": "Dr^House^Gregory",
+      "requested_procedure_id": "RP-MR-SPINE",
+      "requested_procedure_desc": "MRI Lumbar Spine Without Contrast",
+      "requested_procedure_priority": "ROUTINE",
+      "reason_for_procedure": "Lower back pain radiating to left leg (L5-S1 radiculopathy)",
+      "modality": "MR",
+      "station_ae_title": "MR_SCANNER_3T",
+      "station_name": "MRI Suite A",
+      "scheduled_start_date": "2026-09-02",
+      "scheduled_start_time": "10:00:00",
+      "scheduled_sps_id": "SPS-20260902-02",
+      "scheduled_sps_desc": "MRI Lumbar Spine Standard",
+      "scheduled_performing_physician": "Dr^Wilson^James"
+    }
+  ]
+}

@@ -115,8 +115,60 @@ security.authAllowedOrigins=*
 
 ---
 
+## 📋 DICOM Modality Worklist (MWL)
+Orthanc is configured with the **Modality Worklists plugin** to serve scheduled radiological procedures to modalities (CT, MRI, Ultrasound, Digital X-Ray) over DICOM C-FIND (`1.2.840.10008.5.1.4.31`) on port `4242`.
+
+### Setup Python Environment
+```bash
+# Activate the existing virtual environment:
+source .venv/bin/activate
+
+# Or recreate and install if needed:
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 1. Generate Worklist Files (.wl)
+Use the Python generator in `scripts/create_mwl.py`:
+```bash
+# Generate sample worklists for CT, MR, US, DX
+python scripts/create_mwl.py sample --out-dir ./worklists
+
+# Or create a custom MWL entry
+python scripts/create_mwl.py create \
+    --patient-id "PAT-10045" \
+    --patient-name "Doe^John" \
+    --patient-dob "1985-06-20" \
+    --patient-sex "M" \
+    --modality "CT" \
+    --station-ae "CT_SCANNER_01" \
+    --procedure-desc "CT Chest with Contrast" \
+    --priority "STAT" \
+    --output "./worklists/pat10045_ct.wl"
+
+# Or batch generate from JSON
+python scripts/create_mwl.py batch --input scripts/sample_worklists.json --out-dir ./worklists
+```
+
+### 2. Query Worklists via DICOM C-FIND (MWL SCU)
+Verify and query active worklist entries served by Orthanc:
+```bash
+# Query all worklist entries
+python scripts/query_mwl.py
+
+# Query by modality
+python scripts/query_mwl.py --modality CT
+
+# Query by patient ID or name
+python scripts/query_mwl.py --patient-id P1001
+```
+
+---
+
 ## 🗄️ Database Scaling & Migration
 
 By default, the stack uses an embedded **SQLite** engine suitable for testing and development. When scaling up for production:
 - See the complete [DATABASE_MIGRATION.md](file:///Users/matt/Documents/MedDream/DATABASE_MIGRATION.md) for step-by-step guides on upgrading to **PostgreSQL** or **MySQL/MariaDB**, hybrid storage strategies, and backup/restore workflows.
+
 

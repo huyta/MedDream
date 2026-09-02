@@ -28,6 +28,7 @@ services:
       DICOM_WEB__ENABLE_WADO: "true"
     volumes:
       - ./config/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./worklists:/var/lib/orthanc/worklists
       - orthanc-data:/var/lib/orthanc/db
     networks:
       - pacs-network
