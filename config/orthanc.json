@@ -28,6 +28,7 @@
   "Worklists": {
     "Enable": false
   },
+  "StableAge": 60,
   "PythonScript": "/etc/orthanc/worklist_plugin.py",
   "Python": {
     "Path": "/etc/orthanc/worklist_plugin.py",

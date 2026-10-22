@@ -264,207 +264,129 @@ def worklist_callback(*args, **kwargs) -> None:
 
 
 # =====================================================================
-# PART 2: Automated Exam Completion Webhook (C-STORE Instance Storage)
+# PART 2: Automated Exam Completion Webhook (Orthanc Stable Study Event)
 # =====================================================================
 
-class StudyDebouncer:
+def extract_study_identifiers(study_dict: Dict[str, Any]) -> Tuple[str, str]:
     """
-    Thread-safe debouncer and deduplicator for incoming DICOM studies.
-    Prevents flooding the RIS API when a modality streams hundreds/thousands of slices
-    for a single CT, MRI, or multi-frame study.
+    Extracts AccessionNumber and StudyInstanceUID from Orthanc's /studies/{id} JSON response.
+    Gracefully handles empty, missing, or alternate hexadecimal DICOM tag keys.
     """
-
-    def __init__(self, debounce_delay: float = 3.0, cache_ttl: float = 3600.0):
-        self.debounce_delay = debounce_delay
-        self.cache_ttl = cache_ttl
-        self._lock = threading.Lock()
-        self._timers: Dict[str, threading.Timer] = {}
-        self._study_data: Dict[str, Dict[str, Any]] = {}
-        self._completed_cache: Dict[str, float] = {}
-
-        self._queue: Queue = Queue()
-        self._worker_thread = threading.Thread(target=self._http_worker, daemon=True)
-        self._worker_thread.start()
-
-    def _cleanup_expired_cache(self, now: float) -> None:
-        expired = [k for k, ts in self._completed_cache.items() if now - ts > self.cache_ttl]
-        for k in expired:
-            del self._completed_cache[k]
-
-    def record_instance(
-        self,
-        accession_number: Optional[str],
-        study_instance_uid: Optional[str],
-        modality: Optional[str] = None,
-        station_ae: Optional[str] = None
-    ) -> bool:
-        key = (accession_number or study_instance_uid or "").strip().upper()
-        if not key:
-            return False
-
-        now = time.time()
-        with self._lock:
-            self._cleanup_expired_cache(now)
-
-            if key in self._completed_cache:
-                return False
-
-            if key not in self._study_data:
-                self._study_data[key] = {
-                    "accessionNumber": accession_number,
-                    "studyInstanceUid": study_instance_uid,
-                    "modality": modality,
-                    "stationAeTitle": station_ae,
-                    "instanceCount": 1,
-                    "firstSeen": now,
-                    "lastSeen": now,
-                }
-            else:
-                record = self._study_data[key]
-                record["instanceCount"] += 1
-                record["lastSeen"] = now
-                if not record["accessionNumber"] and accession_number:
-                    record["accessionNumber"] = accession_number
-                if not record["studyInstanceUid"] and study_instance_uid:
-                    record["studyInstanceUid"] = study_instance_uid
-                if not record["modality"] and modality:
-                    record["modality"] = modality
-
-            if key in self._timers:
-                self._timers[key].cancel()
-
-            timer = threading.Timer(self.debounce_delay, self._on_study_settled, args=[key])
-            self._timers[key] = timer
-            timer.start()
-
-            return True
-
-    def _on_study_settled(self, key: str) -> None:
-        with self._lock:
-            self._timers.pop(key, None)
-            study_info = self._study_data.pop(key, None)
-            if not study_info:
-                return
-            self._completed_cache[key] = time.time()
-
-        self._queue.put(study_info)
-
-    def _http_worker(self) -> None:
-        while True:
-            try:
-                payload = self._queue.get()
-                self._send_complete_webhook(payload)
-                self._queue.task_done()
-            except Exception as e:
-                log_error(f"Unexpected error in debounce worker thread: {e}")
-
-    def _send_complete_webhook(self, payload: Dict[str, Any]) -> None:
-        accession = payload.get("accessionNumber")
-        study_uid = payload.get("studyInstanceUid")
-        count = payload.get("instanceCount", 1)
-
-        log_info(
-            f"Study stream settled ({count} instances). Triggering RIS webhook for "
-            f"Accession='{accession}', StudyUID='{study_uid}' -> {RIS_STATUS_API_URL}"
-        )
-
-        post_body = {
-            "accessionNumber": accession,
-            "studyInstanceUid": study_uid,
-            "modality": payload.get("modality"),
-            "stationAeTitle": payload.get("stationAeTitle"),
-            "instanceCount": count
-        }
-
-        try:
-            resp = requests.post(
-                RIS_STATUS_API_URL,
-                json=post_body,
-                timeout=HTTP_TIMEOUT_SECONDS,
-                headers={
-                    "Content-Type": "application/json",
-                    "User-Agent": "Orthanc-ExamStatus-Plugin/1.0"
-                }
-            )
-
-            if resp.status_code in (200, 204):
-                log_info(f"RIS API successfully updated exam status to Completed: {resp.text}")
-            elif resp.status_code == 404:
-                log_warning(f"RIS API reported exam not found for Accession='{accession}': {resp.text}")
-            else:
-                log_error(f"RIS API returned HTTP {resp.status_code}: {resp.text[:300]}")
-
-        except Timeout:
-            log_error(f"Timeout ({HTTP_TIMEOUT_SECONDS}s) connecting to RIS API at {RIS_STATUS_API_URL}")
-        except ConnectionError as ce:
-            log_error(f"Failed to connect to RIS API at {RIS_STATUS_API_URL}: {ce}")
-        except RequestException as re:
-            log_error(f"HTTP exception notifying RIS API: {re}")
-        except Exception as ex:
-            log_error(f"Unexpected error executing status webhook: {ex}")
-
-
-_debouncer = StudyDebouncer(
-    debounce_delay=DEBOUNCE_DELAY_SECONDS,
-    cache_ttl=DEDUPLICATION_CACHE_TTL
-)
-
-
-def extract_instance_metadata(dicom: Any) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
-    tags: Dict[str, Any] = {}
-
-    if hasattr(dicom, "GetInstanceSimplifiedJson"):
-        try:
-            raw_json = dicom.GetInstanceSimplifiedJson()
-            if isinstance(raw_json, str):
-                tags = json.loads(raw_json)
-            elif isinstance(raw_json, dict):
-                tags = raw_json
-        except Exception as e:
-            log_warning(f"Failed to parse instance simplified JSON: {e}")
+    main_tags = study_dict.get("MainDicomTags", {})
 
     accession = (
-        tags.get("AccessionNumber")
-        or tags.get("0008,0050")
-        or tags.get("00080050")
+        main_tags.get("AccessionNumber")
+        or main_tags.get("0008,0050")
+        or main_tags.get("00080050")
+        or ""
     )
+    if isinstance(accession, dict) and "Value" in accession:
+        accession = accession["Value"]
+    clean_accession = str(accession).strip() if accession is not None else ""
+
     study_uid = (
-        tags.get("StudyInstanceUID")
-        or tags.get("0020,000d")
-        or tags.get("0020000d")
+        main_tags.get("StudyInstanceUID")
+        or main_tags.get("0020,000d")
+        or main_tags.get("0020000d")
+        or ""
     )
-    modality = (
-        tags.get("Modality")
-        or tags.get("0008,0060")
-        or tags.get("00080060")
-    )
-    station_ae = (
-        tags.get("StationName")
-        or tags.get("ScheduledStationAETitle")
-        or tags.get("0008,1010")
-        or tags.get("0040,0001")
-    )
+    if isinstance(study_uid, dict) and "Value" in study_uid:
+        study_uid = study_uid["Value"]
+    clean_study_uid = str(study_uid).strip() if study_uid is not None else ""
 
-    clean_accession = str(accession).strip() if accession else None
-    clean_study_uid = str(study_uid).strip() if study_uid else None
-    clean_modality = str(modality).strip() if modality else None
-    clean_station_ae = str(station_ae).strip() if station_ae else None
-
-    return clean_accession, clean_study_uid, clean_modality, clean_station_ae
+    return clean_accession, clean_study_uid
 
 
-def on_stored_instance_callback(dicom: Any, instance_id: str) -> None:
+def stable_study_callback(studyId: str) -> None:
+    """
+    Orthanc Stable Study callback.
+    Fires once per study when transmission has completely settled
+    (no new instances received within StableAge timeout window, typically 60s).
+    """
+    log_info(f"Orthanc detected Stable Study event for internal StudyID: '{studyId}'")
+
+    if not HAS_ORTHANC:
+        log_warning(f"Orthanc SDK not available; skipping REST API fetch for StudyID '{studyId}'.")
+        return
+
+    # 1. Fetch study core metadata from Orthanc's internal memory
     try:
-        accession, study_uid, modality, station_ae = extract_instance_metadata(dicom)
+        raw_response = orthanc.RestApiGet(f"/studies/{studyId}")
+        if isinstance(raw_response, bytes):
+            raw_response = raw_response.decode("utf-8")
 
-        if not accession and not study_uid:
+        study_metadata = json.loads(raw_response) if isinstance(raw_response, str) else raw_response
+        if not isinstance(study_metadata, dict):
+            log_error(f"Unexpected non-dict response format from /studies/{studyId}: {type(study_metadata)}")
             return
 
-        # Record instance in non-blocking thread debouncer (< 0.1ms)
-        _debouncer.record_instance(accession, study_uid, modality, station_ae)
-
     except Exception as ex:
-        log_error(f"Error handling stored instance '{instance_id}': {ex}")
+        log_error(f"Failed to retrieve metadata from Orthanc REST API for study '{studyId}': {ex}")
+        return
+
+    # 2. Extract Accession Number and Study Instance UID
+    accession_number, study_instance_uid = extract_study_identifiers(study_metadata)
+
+    log_info(
+        f"Stable Study '{studyId}' resolved: AccessionNumber='{accession_number}', "
+        f"StudyInstanceUID='{study_instance_uid}'"
+    )
+
+    if not accession_number and not study_instance_uid:
+        log_warning(
+            f"Study '{studyId}' contains neither AccessionNumber nor StudyInstanceUID. "
+            "Skipping RIS completion notification."
+        )
+        return
+
+    # 3. Construct strictly formatted JSON payload
+    payload = {
+        "accessionNumber": accession_number,
+        "studyInstanceUid": study_instance_uid
+    }
+
+    # 4. Send single HTTP POST request to .NET Core RIS API
+    log_info(
+        f"Sending exam completion webhook to RIS API at '{RIS_STATUS_API_URL}' "
+        f"with payload: {payload}"
+    )
+
+    try:
+        response = requests.post(
+            RIS_STATUS_API_URL,
+            json=payload,
+            timeout=HTTP_TIMEOUT_SECONDS,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "Orthanc-StableStudy-Plugin/1.0"
+            }
+        )
+
+        if response.status_code in (200, 204):
+            log_info(
+                f"RIS API successfully acknowledged exam completion (HTTP {response.status_code}): "
+                f"{response.text}"
+            )
+        elif response.status_code == 404:
+            log_warning(
+                f"RIS API reported exam not found for Accession='{accession_number}', "
+                f"StudyUID='{study_instance_uid}' (HTTP 404): {response.text}"
+            )
+        else:
+            log_error(
+                f"RIS API returned unexpected HTTP {response.status_code} for study '{studyId}': "
+                f"{response.text[:300]}"
+            )
+
+    except Timeout:
+        log_error(f"Timeout ({HTTP_TIMEOUT_SECONDS}s) connecting to RIS API endpoint '{RIS_STATUS_API_URL}'.")
+    except ConnectionError as ce:
+        log_error(f"Network connection failed while reaching RIS API at '{RIS_STATUS_API_URL}': {ce}")
+    except RequestException as re:
+        log_error(f"HTTP request error during RIS completion webhook: {re}")
+    except Exception as ex:
+        log_error(f"Unexpected exception while sending completion notification for study '{studyId}': {ex}")
 
 
 # =====================================================================
@@ -472,6 +394,16 @@ def on_stored_instance_callback(dicom: Any, instance_id: str) -> None:
 # =====================================================================
 
 if HAS_ORTHANC:
+    # Ensure orthanc has RegisterOnStableStudyCallback attribute
+    if not hasattr(orthanc, "RegisterOnStableStudyCallback"):
+        def _register_on_stable_study(callback):
+            def _on_change(change_type, level, resource_id):
+                if change_type == orthanc.ChangeType.STABLE_STUDY:
+                    callback(resource_id)
+            orthanc.RegisterOnChangeCallback(_on_change)
+
+        orthanc.RegisterOnStableStudyCallback = _register_on_stable_study
+
     try:
         orthanc.RegisterWorklistCallback(worklist_callback)
         log_info("Successfully registered dynamic Worklist callback via orthanc.RegisterWorklistCallback().")
@@ -479,10 +411,10 @@ if HAS_ORTHANC:
         log_error(f"Failed to register Orthanc Worklist callback: {err}")
 
     try:
-        orthanc.RegisterOnStoredInstanceCallback(on_stored_instance_callback)
-        log_info("Successfully registered OnStoredInstance callback with debouncer & RIS status webhook.")
+        orthanc.RegisterOnStableStudyCallback(stable_study_callback)
+        log_info("Successfully registered OnStableStudy callback via orthanc.RegisterOnStableStudyCallback().")
     except Exception as err:
-        log_error(f"Failed to register OnStoredInstance callback: {err}")
+        log_error(f"Failed to register OnStableStudy callback: {err}")
 else:
     logger.info("Plugin loaded outside Orthanc environment. Callbacks registration skipped.")
 
