@@ -51,6 +51,7 @@ app.MapGet("/", () => Results.Ok(new
     service = "RIS Modality Worklist API",
     status = "Online",
     worklistEndpoint = "/api/worklist",
+    randomMwlEndpoint = "/api/worklist/random",
     swaggerUi = "/swagger"
 }));
 
