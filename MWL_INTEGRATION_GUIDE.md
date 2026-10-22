@@ -129,3 +129,33 @@ python scripts/query_mwl.py --host localhost --port 4242 --called-aet ORTHANC
 # Query specific modality
 python scripts/query_mwl.py --host localhost --port 4242 --called-aet ORTHANC --modality CT
 ```
+
+---
+
+## 5. Automated Exam Status Completion (C-STORE Webhook)
+
+When an imaging modality stores images into Orthanc (via DICOM C-STORE or REST API upload):
+1. **Event Interception**: Orthanc triggers `OnStoredInstance` callback in `worklist_plugin.py`.
+2. **Metadata Extraction**: Extracts Accession Number (`0008,0050`), Study Instance UID (`0020,000d`), and Modality.
+3. **Non-Blocking Debouncing**: For multi-frame/CT/MRI studies containing hundreds of slices, a sliding debounce window (default: 3.0 seconds) waits for the transmission stream to settle.
+4. **Asynchronous Webhook**: A background daemon worker thread posts to:
+   ```
+   POST /api/exams/complete
+   Payload: {"accessionNumber": "...", "studyInstanceUid": "...", "instanceCount": 120}
+   ```
+5. **Database Transition**: `ExamStatusController.cs` updates the exam status in PostgreSQL from `Scheduled` to `Completed` with `CompletionDateTime = DateTime.UtcNow`.
+
+### Manual Testing the Webhook
+```bash
+# Mark exam as completed via REST webhook directly:
+curl -i -X POST http://localhost:5000/api/exams/complete \
+  -H "Content-Type: application/json" \
+  -d '{"accessionNumber": "ACC2026102203"}'
+
+# Or upload a DICOM file to Orthanc to trigger it automatically:
+curl -X POST http://localhost:8042/tools/create-dicom \
+  -u orthanc:orthanc \
+  -H "Content-Type: application/json" \
+  -d '{"PatientName": "Doe^John", "PatientID": "PAT-10047", "AccessionNumber": "ACC2026102203"}'
+```
+

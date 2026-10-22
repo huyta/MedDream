@@ -65,6 +65,10 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("Ensuring PostgreSQL database and schema are created...");
         await db.Database.EnsureCreatedAsync();
 
+        // Ensure CompletionDateTime column exists if upgrading existing DB
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"Exams\" ADD COLUMN IF NOT EXISTS \"CompletionDateTime\" timestamp with time zone;");
+
         if (!await db.Patients.AnyAsync())
         {
             logger.LogInformation("Seeding initial patients and today's scheduled exams...");

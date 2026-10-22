@@ -51,6 +51,8 @@ public class Exam
 
     public ExamStatus Status { get; set; } = ExamStatus.Scheduled;
 
+    public DateTime? CompletionDateTime { get; set; }
+
     // Relationship to Patient
     [Required]
     public Guid PatientId { get; set; }
