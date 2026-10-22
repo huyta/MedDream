@@ -42,3 +42,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# .NET Core build outputs
+**/bin/
+**/obj/
+*.user
+*.suo
+
+

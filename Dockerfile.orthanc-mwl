@@ -1,0 +1,25 @@
+# =====================================================================
+# Production Dockerfile for Orthanc PACS with Dynamic Python MWL Plugin
+# =====================================================================
+FROM orthancteam/orthanc:24.12.0
+
+LABEL maintainer="Healthcare Systems Engineering"
+LABEL description="Orthanc PACS with Python dynamic Modality Worklist (MWL) integration"
+
+# Install python3-requests package
+USER root
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3-requests \
+        python3-pip \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the dynamic worklist Python script into the Orthanc configuration directory
+COPY config/worklist_plugin.py /etc/orthanc/worklist_plugin.py
+RUN chmod 644 /etc/orthanc/worklist_plugin.py && \
+    mkdir -p /var/lib/orthanc/db /var/lib/orthanc/worklists && \
+    chmod -R 777 /var/lib/orthanc
+
+# Base image defaults

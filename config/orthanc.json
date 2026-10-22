@@ -26,9 +26,12 @@
     "Ssl": false
   },
   "Worklists": {
-    "Enable": true,
-    "Database": "/var/lib/orthanc/worklists",
-    "FilterIssuerAet": false
+    "Enable": false
+  },
+  "PythonScript": "/etc/orthanc/worklist_plugin.py",
+  "Python": {
+    "Path": "/etc/orthanc/worklist_plugin.py",
+    "Verbose": false
   },
   "Plugins": [
     "/usr/share/orthanc/plugins"

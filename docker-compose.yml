@@ -1,9 +1,55 @@
 services:
   # ==========================================
-  # Orthanc PACS (DICOM Storage & Server)
+  # 1. PostgreSQL Database (RIS Storage)
+  # ==========================================
+  postgres:
+    image: postgres:17-alpine
+    container_name: meddream-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ris_db
+      POSTGRES_USER: ris_user
+      POSTGRES_PASSWORD: ris_password
+    volumes:
+      - ris-postgres-data:/var/lib/postgresql/data
+    networks:
+      - pacs-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ris_user -d ris_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================
+  # 2. .NET Core RIS Web API
+  # ==========================================
+  ris-api:
+    build:
+      context: ./ris-api
+      dockerfile: Dockerfile
+    container_name: ris-core-api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"        # Exposes REST API & Swagger UI on host port 5000
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ris_db;Username=ris_user;Password=ris_password"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pacs-network
+
+  # ==========================================
+  # 3. Orthanc PACS (with Python MWL Plugin)
   # ==========================================
   orthanc:
-    image: orthancteam/orthanc:24.12.0
+    build:
+      context: .
+      dockerfile: Dockerfile.orthanc-mwl
+    image: meddream-orthanc-mwl:latest
     container_name: meddream-orthanc
     restart: unless-stopped
     ports:
@@ -14,10 +60,14 @@ services:
       ORTHANC__REGISTERED_USERS: '{"orthanc":"orthanc"}'
       DICOM_WEB__ENABLE: "true"
       DICOM_WEB__ENABLE_WADO: "true"
+      RIS_API_URL: "${RIS_API_URL:-http://ris-api:8080/api/worklist}"
     volumes:
       - ./config/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - ./config/worklist_plugin.py:/etc/orthanc/worklist_plugin.py:ro
       - ./worklists:/var/lib/orthanc/worklists
       - orthanc-data:/var/lib/orthanc/db
+    depends_on:
+      - ris-api
     networks:
       - pacs-network
     healthcheck:
@@ -28,10 +78,10 @@ services:
       start_period: 5s
 
   # ==========================================
-  # MedDream DICOM Viewer Web Application
+  # 4. MedDream DICOM Viewer Web Application
   # ==========================================
   meddream:
-    image: meddream/orthanc-dicom-viewer:8.10.0-rc.8
+    image: meddream/orthanc-dicom-viewer:8.10.0-rc.10
     container_name: meddream-viewer
     restart: unless-stopped
     ports:
@@ -45,7 +95,6 @@ services:
     networks:
       - pacs-network
     healthcheck:
-      # Use raw TCP socket check to avoid consuming demo user license sessions
       test: ["CMD-SHELL", "python3 -c 'import socket; s = socket.socket(); s.settimeout(2); s.connect((\"127.0.0.1\", 8080)); s.close()'"]
       interval: 15s
       timeout: 5s
@@ -58,6 +107,8 @@ services:
 volumes:
   orthanc-data:
     name: meddream_orthanc_data
+  ris-postgres-data:
+    name: meddream_ris_postgres_data
 
 # ==========================================
 # Internal Network
