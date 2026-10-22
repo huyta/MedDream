@@ -93,7 +93,7 @@ services:
   # MedDream DICOM Viewer
   # ==========================================
   meddream:
-    image: meddream/orthanc-dicom-viewer:8.10.0-rc.8
+    image: meddream/orthanc-dicom-viewer:8.10.0-rc.10
     container_name: meddream-viewer
     restart: unless-stopped
     ports:

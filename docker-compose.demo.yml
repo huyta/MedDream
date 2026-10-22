@@ -42,7 +42,7 @@ services:
   # 2. MedDream DICOM Viewer Web Application
   # ==========================================
   meddream:
-    image: meddream/orthanc-dicom-viewer:8.10.0-rc.8
+    image: meddream/orthanc-dicom-viewer:8.10.0-rc.10
     container_name: meddream-viewer
     restart: unless-stopped
     ports:
@@ -90,7 +90,7 @@ services:
     networks:
       - pacs-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 15s
       timeout: 3s
       retries: 3
